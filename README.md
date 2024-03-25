@@ -749,3 +749,12 @@ npm run submit-test
 | - Size Measurement                      | - 计算工作量                             |                  |  |
 | - Postmortem & Process Improvement Plan | - 事后总结和过程改进计划（总结过程中的问题和改进点） |                  |  |
 | **TOTAL** | **合计**                                 |                  |  |
+
+
+## 声明和致谢
+
+本项目由 2024 级北京航空航天大学计算机学院敏捷软工课程组设计。
+
+项目设计：`@KumaXX`；制图：`@gxy`；标程：`@KumaXX`，`@CoolColoury`；项目维护：`@KumaXX`，`@gxy`，`@CoolColoury`；评测设计和支持：`@KumaXX`，`@shj`。
+
+感谢 `@GrapeLemonade`， `@Codevka`，`@neumy`，`@Chenrt`，`@coekjan`，`@shj` 和其他关心项目的大家对项目的建议！
