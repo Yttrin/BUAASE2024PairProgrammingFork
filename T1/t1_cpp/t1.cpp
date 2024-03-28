@@ -3,7 +3,7 @@
 #include <cstdlib>
 extern "C" {
 int EMSCRIPTEN_KEEPALIVE bocchi_shut_up(int* flag, int* seq, int* size) {
-    printf("%d %d %d\n",*flag,*seq,*size);
+    //printf("%d %d %d\n",*flag,*seq,*size);
     int tmp[30]={},i;
     for(i=0;i<*size;i++){
         tmp[seq[i]]++;
