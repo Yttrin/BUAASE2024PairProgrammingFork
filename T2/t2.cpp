@@ -29,7 +29,7 @@ char terminate(char* base){ //return -1 or (if game ends) final score of first p
     printf("\n)\n");
     */
     if(base[0]+base[1]+base[2]+base[3]+base[4]+base[5] == 0)return base[6];
-    if(base[7]+base[8]+base[9]+base[10]+base[11]+base[12] == 0)return 6*y-base[13];
+    if(base[7]+base[8]+base[9]+base[10]+base[11]+base[12] == 0)return 12*y-base[13];
     return -1;
 }
 char perform(char* base, char* now, char op){//-1 = illegal
