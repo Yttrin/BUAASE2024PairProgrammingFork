@@ -1,8 +1,7 @@
-// test.js
 import assert from "assert";
 import Module from "./t1.ems.js";
 
-// Get the exported function
+
 let a = await Module()
 const bocchiShutUp_cwrap = a.cwrap('bocchi_shut_up', 'number', ['number', 'number', 'number']);
 
@@ -17,5 +16,9 @@ export function bocchiShutUp(flag,array,size) {
     let flagPointer = get_int32_pointer([flag]);
     let arrayPointer = get_int32_pointer(array);
     let sizePointer = get_int32_pointer([size]);
-    return bocchiShutUp_cwrap(flagPointer,arrayPointer,sizePointer);
+    let ans = bocchiShutUp_cwrap(flagPointer,arrayPointer,sizePointer);
+    a._free(flagPointer);
+    a._free(arrayPointer);
+    a._free(sizePointer);
+    return ans;
 }
