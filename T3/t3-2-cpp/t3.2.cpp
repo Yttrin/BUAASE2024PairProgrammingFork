@@ -100,19 +100,13 @@ typedef struct nodest node;
 
 struct playerst{
     int depth;//5,6
-    int node_max;//5,7
-    node* enemy[8];
     node* all[8];
     double all_percent;
     int turn;//1,2
 };
 typedef struct playerst player;
 void print_player(player p){
-    printf("dep/max/alp = [%d, %d, %f]\n",p.depth,p.node_max,p.all_percent);
-    for(int i=0;i<=7;i++)if(p.enemy[i]!=NULL){
-        printf("en %d: ",p.enemy[i]->id);
-        for(int j=0;j<=13;j++)printf("%lf%s",p.enemy[i]->q[j],j==13?"\n":", ");
-    }
+    printf("dep/alp = [%d, %f]\n",p.depth,p.all_percent);
     for(int i=0;i<=7;i++)if(p.all[i]!=NULL){
         printf("al %d: ",p.all[i]->id);
         for(int j=0;j<=13;j++)printf("%f%s",p.all[i]->q[j],j==13?"\n":", ");
@@ -130,48 +124,42 @@ node* copy_of(node n){
 //pos
 //13 12 11 10  9  8  7  6
 //13  0  1  2  3  4  5  6
-player* new_player(int dep, int max, double alp, int diva, int dive){
+player* new_player(int dep, double alp, int mf,int m0){
     player* p = (player*)malloc(sizeof(player));
     memset(p,0,sizeof(player));
     p->depth = dep;
-    p->node_max = max;
-    node* e0 = (node*)malloc(sizeof(node));
-    node* ef = (node*)malloc(sizeof(node));
-    memset(ef,0,sizeof(node));
-    memset(e0,0,sizeof(node));
-    e0->id = 0;
-    ef->id = 12*y;
+    node* a0 = (node*)malloc(sizeof(node));
+    node* af = (node*)malloc(sizeof(node));
+    memset(af,0,sizeof(node));
+    memset(a0,0,sizeof(node));
+    a0->id = 0;
+    af->id = 12*y;
     for(int i=0;i<=6;i++){
-        e0->q[i] = 1;
-        ef->q[i] = 0;
+        a0->q[i] = 1;
+        af->q[i] = 0;
     }
     for(int i=7;i<=13;i++){
-        e0->q[i] = -1;
-        ef->q[i] = 0;
+        a0->q[i] = -1;
+        af->q[i] = 0;
     }
-    ef->q[6]=1;ef->q[13]=-1;
-    node* a0 = copy_of(*e0);
-    node* am = copy_of(*ef);
-    node* em = copy_of(*ef);
-    node* af = copy_of(*ef);
-    am->id = diva*y;
-    em->id = dive*y;
+    af->q[6]=1;af->q[13]=-1;
+    node* amf = copy_of(*af);
+    node* am0 = copy_of(*a0);
+    amf->id = mf*y;
+    am0->id = m0*y;
     af->id = 12*y;
     p->all_percent = alp;
     p->turn = 1;
-    p->enemy[0] = e0;
-    p->enemy[1] = em;
-    p->enemy[2] = ef;
     p->all[0] = a0;
-    p->all[1] = am;
-    p->all[2] = af;
+    p->all[1] = am0;
+    p->all[2] = amf;
+    p->all[3] = af;
     return p;
 }
 
 void release(player* p){
     for(int i=0;i<=7;i++){
         if(p->all[i]!=NULL)free(p->all[i]);
-        if(p->enemy[i]!=NULL)free(p->enemy[i]);
     }
     free(p);
 }
@@ -179,18 +167,8 @@ void release(player* p){
 void make_opponent(player p,player*dst){
     player* r = dst;
     r->all_percent=p.all_percent;
-    r->node_max=p.node_max;
     r->depth=p.depth;
     r->turn=3-p.turn;
-    for(int i=0;i<=7;i++)if(p.enemy[i]!=NULL){
-        node* n = (node*)malloc(sizeof(node));
-        memset(n,0,sizeof(node));
-        n->id=p.enemy[i]->id;
-        for(int j=0;j<=13;j++){
-            n->q[j]=p.enemy[i]->q[(j+7)%14];
-        }
-        r->enemy[i]=n;
-    }
     for(int i=0;i<=7;i++)if(p.all[i]!=NULL){
         node* n = (node*)malloc(sizeof(node));
         memset(n,0,sizeof(node));
@@ -203,32 +181,10 @@ void make_opponent(player p,player*dst){
 }
 
 double value(player p, char* base){
-    int en=0,al=0,enx=0,eny=0;
-    double ren=0,ral=0;
-    for(int i=7;i<=12;i++)enx+=base[i];
-    for(int i=0;i<=5;i++)eny+=base[i];
-    en=(enx>eny?eny:enx);
+    int al=0;
+    double ral=0;
     for(int i=7;i<=12;i++)al+=base[i];
     for(int i=0;i<=5;i++)al+=base[i];
-    for(int i=0;i<=7;i++){
-        if(p.enemy[i]->id==en){
-            for(int j=0;j<=13;j++){
-                ren+=p.enemy[i]->q[j]*base[j];
-            }
-            break;
-        }
-        if(p.enemy[i+1]->id>en){
-            double en1=0,en2=0;
-            for(int j=0;j<=13;j++){
-                en1+=p.enemy[i]->q[j]*base[j];
-            }
-            for(int j=0;j<=13;j++){
-                en2+=p.enemy[i+1]->q[j]*base[j];
-            }
-            ren = ((en-p.enemy[i]->id)*(en2)+(p.enemy[i+1]->id-en)*(en1))/(p.enemy[i+1]->id-p.enemy[i]->id);
-            break;
-        }
-    }
     for(int i=0;i<=7;i++){
         if(p.all[i]->id==al){
             for(int j=0;j<=13;j++){
@@ -248,7 +204,7 @@ double value(player p, char* base){
             break;
         }
     }
-    return p.all_percent*ral+(1-p.all_percent)*ren;
+    return ral;
 }
 
 int minmax(player p,char* base,int d,int turn, double*score){
@@ -283,19 +239,97 @@ int minmax(player p,char* base,int d,int turn, double*score){
     return best_op;
 }
 
-int autogame(player p1,player p2){
+int alpha_beta_minmax(player p,char* base,int d,int turn, double*score,double alpha,double beta);
+
+int ab_minmax(player p,char* base,int d,int turn, double* score){
+    double alpha=-9999,beta=9999;
+    return alpha_beta_minmax(p,base,d,turn,score,alpha,beta);
+}
+
+int alpha_beta_minmax(player p,char* base,int d,int turn, double* score,double alpha,double beta){
+    if(d==0||terminate(base)!=-1){ //minus score for opponent
+        player* tmp=&p;
+        if(turn!=p.turn){
+            tmp=(player*)malloc(sizeof(player));
+            memset(tmp,0,sizeof(player));
+            make_opponent(p,tmp);
+        }
+        *score=value(*tmp,base);
+        if(p.turn!=tmp->turn)release(tmp);
+        return 0;
+    }
+    if(turn==1){
+        double max_score=-999;
+        int best_op=0;
+        for(int i=0;i<=5;i++){
+            char op=turn*10+i+1;
+            if(base[op2p[op]]==0)continue;
+            double this_score;
+            char tmp[14];char now=turn;
+            copy_board(base,tmp);
+            perform(tmp,&now,op);
+            alpha_beta_minmax(p,tmp,d-(turn==now?0:1),now,&this_score,alpha,beta);
+            if(now!=turn)this_score*=-1;
+            if(this_score>max_score){
+                max_score=this_score;
+                best_op=op;
+            }
+            if(max_score>alpha)alpha=max_score;
+            if(alpha>=beta)break;
+        }   
+        *score=max_score;
+        return best_op;
+    }
+    else{
+        double opponent_max_score=-999;
+        int best_op=0;
+        for(int i=0;i<=5;i++){
+            char op=turn*10+i+1;
+            if(base[op2p[op]]==0)continue;
+            double this_score;
+            char tmp[14];char now=turn;
+            copy_board(base,tmp);
+            perform(tmp,&now,op);
+            alpha_beta_minmax(p,tmp,d-(turn==now?0:1),now,&this_score,alpha,beta);
+            if(now!=turn)this_score*=-1;
+            if(this_score>opponent_max_score){
+                opponent_max_score=this_score;
+                best_op=op;
+            }
+            if(-1*opponent_max_score<beta)beta=-1*opponent_max_score;
+            if(alpha>=beta)break;
+        }
+        *score=opponent_max_score;
+        return best_op;
+    }
+}
+
+int autogame(player p1,player p2,int ver){
     char base[14];
     init(base);
     char turn=1;
     print(base);
     while(terminate(base)==-1){
         double tmp;
-        int op = minmax(turn==1?p1:p2,base,(turn==1?p1:p2).depth,turn,&tmp);
+        int op;
+        //int op = minmax(turn==1?p1:p2,base,(turn==1?p1:p2).depth,turn,&tmp);
+        if(turn==1){
+            if(ver==0)
+                op = minmax(p1,base,p1.depth,turn,&tmp);
+            else
+                op = ab_minmax(p1,base,p1.depth,turn,&tmp);
+        }
+        else{
+            if(ver==0)
+                op = minmax(p2,base,p2.depth,turn,&tmp);
+            else
+                op = ab_minmax(p2,base,p2.depth,turn,&tmp);
+        }
         perform(base,&turn,op);
-        if(no_step_print==0)printf("op=%d,score=%.2f\n",op,tmp);
+        //if(no_step_print==0);printf("(%d,%.2f)",op,tmp);
         print(base);
     }
-    printf("final result: %d-%d\n",terminate(base),12*y-terminate(base));
+    printf("<%d-%d>  ",terminate(base),12*y-terminate(base));
     return 2*terminate(base)-12*y;
 }
 int human_game(player p1){
@@ -314,7 +348,7 @@ int human_game(player p1){
             printf("your turn.\n"),
             scanf("%d",&op);
         else
-            op = minmax(turn==1?p1:p1,base,(turn==1?p1:p1).depth,turn,&tmp);
+            op = ab_minmax(turn==1?p1:p1,base,(turn==1?p1:p1).depth,turn,&tmp);
         perform(base,&turn,op);
         if(tmp!=-999)printf("op=%d,score=%.2f\n",op,tmp);
         print(base);
@@ -323,33 +357,44 @@ int human_game(player p1){
     return 2*terminate(base)-12*y;
 }
 
+//t3.2
+int mancala_operator(int* flag, int* status/*[14]*/){
+    player* p=new_player(9,1.0,12,6);//9,3
+    char base[14];
+    for(int i=0;i<14;i++){
+        base[i]=status[i];
+    }
+    double tmp;
+    return ab_minmax(*p,base,p->depth,*flag,&tmp);
+}
+
 int main(){
-    int n=8;
+    int n=10;
     player* p[n];
     double t1[n]={},t2[n]={};
-    int index[n];
     //no_step_print=1;
-    p[4]=new_player(6,2,1.0,12,12);
-    human_game(*p[4]);
+    p[0]=new_player(9,1.0,12,0);
+    p[1]=new_player(9,1.0,9,9);
+    p[2]=new_player(9,1.0,6,6);
+    p[3]=new_player(9,1.0,3,3);
+    p[4]=new_player(9,1.0,0,0);
+    p[5]=new_player(7,1.0,12,3);
+    p[6]=new_player(7,1.0,12,0);
+    p[0]=new_player(9,1.0,12,6);
+    human_game(*p[0]);
     return 0;
-    /*
+    
     //for(int i=0;i<n/2;i++)p[i]=new_player(4,2);
     //for(int i=n/2;i<n;i++)p[i]=new_player(5,2);
-    for(int i=n-1;i>=0;i--)for(int j=0;j<n;j++){
-        printf("%d vs %d\n",i,j);
-        double tmp=autogame(*p[i],*p[j]);
-        t1[i]+=tmp/n/n;
-        t2[j]-=tmp/n/n;
-    }
-    for(int i=0;i<n;i++)index[i]=i;
-    for(int i=0;i<n;i++)for(int j=0;j<n;j++)
-        if(t1[index[i]]<t1[index[j]]){
-            int tmp=index[i];index[i]=index[j];index[j]=tmp;
+    for(int i=0;i<=6;i++){
+        for(int j=0;j<=6;j++){
+            printf("[%d vs %d]",i,j);
+            double tmp=autogame(*p[i],*p[j],1);
+            t1[i]+=tmp/n/n;
+            t2[j]-=tmp/n/n;
         }
-    for(int i=0;i<(n>=3?3:n);i++){
-        printf("[score=%f/%f]\n",t1[index[i]],t2[index[i]]);
-        print_player(*p[index[i]]);
+        printf("\n");
     }
+    printf("prog end\n");
     return 0;
-    */
 }
