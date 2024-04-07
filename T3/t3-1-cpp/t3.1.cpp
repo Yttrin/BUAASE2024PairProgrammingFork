@@ -1,4 +1,6 @@
 #include<iostream>
+#include<cstdlib>
+#include<cstring>
 #define y 4 //pieces per plot
 char p2op[13];
 char op2p[30];
@@ -21,7 +23,7 @@ void init(char* base){//initialize game set, p2op, op2p
     }
 }
 char terminate(char* base){ //return -1 or (if game ends) final score of first player
-    putchar('(\n');
+    //putchar('(\n');
     /*
     for(int i=0;i<=6;i++)printf("%d ",base[i]);
     putchar(10);
@@ -29,7 +31,7 @@ char terminate(char* base){ //return -1 or (if game ends) final score of first p
     printf("\n)\n");
     */
     if(base[0]+base[1]+base[2]+base[3]+base[4]+base[5] == 0)return base[6];
-    if(base[7]+base[8]+base[9]+base[10]+base[11]+base[12] == 0)return 6*y-base[13];
+    if(base[7]+base[8]+base[9]+base[10]+base[11]+base[12] == 0)return 12*y-base[13];
     return -1;
 }
 char perform(char* base, char* now, char op){//-1 = illegal
@@ -73,7 +75,9 @@ int mancala_result_ptr(int* flag,int* seq,int* size){
 }
 
 //t3.1
+extern "C" {
 int mancala_board(int* flag,int* seq,int* size,int* return_array/*[15]*/){
+free(malloc(sizeof(int)));
     char now = seq[0]/10;
     char array[14];
     init(array);
@@ -105,15 +109,17 @@ int mancala_board(int* flag,int* seq,int* size,int* return_array/*[15]*/){
     return_array[14]=ret;
     return 0;
 }
-int main(){
-    int op1[3]={11,12};
-    int op2[5]={13,16,22,26};
-    int test;
-    test = mancala_result(1,op2,4);
-    std::cout<<test<<std::endl;
-    test = mancala_result(1,op1,2);
-    std::cout<<test<<std::endl;
-    test = mancala_result(2,op1,2);
-    std::cout<<test<<std::endl;
-    return 0;
-}
+};
+
+//int main(){
+//    int op1[3]={11,12};
+//    int op2[5]={13,16,22,26};
+//    int test;
+//    test = mancala_result(1,op2,4);
+//    std::cout<<test<<std::endl;
+//    test = mancala_result(1,op1,2);
+//    std::cout<<test<<std::endl;
+//    test = mancala_result(2,op1,2);
+//    std::cout<<test<<std::endl;
+//    return 0;
+//}

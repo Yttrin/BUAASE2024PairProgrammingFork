@@ -1,7 +1,7 @@
 #include<iostream>
 #include<cstdlib>
 #include<cstring>
-#include<random>
+#include<chrono>
 #define y 4 //pieces per plot
 int no_step_print=0;
 char p2op[13];
@@ -28,6 +28,7 @@ void copy_board(char* src,char* dst){
     for(int i = 0;i<14;++i)dst[i]=src[i];
 }
 void print(char* base){
+    return;//no_print
     if(no_step_print==1){return;}
     printf("     26  25  24  23  22  21\n");
     for(int i=13;i>=6;i--)printf("%3d ",base[i]);
@@ -164,22 +165,6 @@ void release(player* p){
     free(p);
 }
 
-void make_opponent(player p,player*dst){
-    player* r = dst;
-    r->all_percent=p.all_percent;
-    r->depth=p.depth;
-    r->turn=3-p.turn;
-    for(int i=0;i<=7;i++)if(p.all[i]!=NULL){
-        node* n = (node*)malloc(sizeof(node));
-        memset(n,0,sizeof(node));
-        n->id=p.all[i]->id;
-        for(int j=0;j<=13;j++){
-            n->q[j]=p.all[i]->q[(j+7)%14];
-        }
-        r->all[i]=n;
-    }
-}
-
 double value(player p, char* base){
     int al=0;
     double ral=0;
@@ -207,55 +192,43 @@ double value(player p, char* base){
     return ral;
 }
 
-int minmax(player p,char* base,int d,int turn, double*score){
-    if(d==0||terminate(base)!=-1){
-        player* tmp=&p;
-        if(turn!=p.turn){
-            tmp=(player*)malloc(sizeof(player));
-            memset(tmp,0,sizeof(player));
-            make_opponent(p,tmp);
-        }
-        *score=value(*tmp,base);
-        if(p.turn!=tmp->turn)release(tmp);
-        return 0;
-    }
-    double max_score=-999;
-    int best_op=0;
-    for(int i=0;i<=5;i++){
-        char op=turn*10+i+1;
-        if(base[op2p[op]]==0)continue;
-        double this_score;
-        char tmp[14];char now=turn;
-        copy_board(base,tmp);
-        perform(tmp,&now,op);
-        minmax(p,tmp,d-(turn==now?0:1),now,&this_score);
-        if(turn!=now)this_score*=-1;
-        if(this_score>max_score){
-            max_score=this_score;
-            best_op=op;
-        }
-    }
-    *score=max_score;
-    return best_op;
+player t32;
+//timer
+std::chrono::time_point<std::chrono::system_clock> start,end;
+void timer_start(){
+    start = std::chrono::system_clock::now();
+}
+int timer_end(){//millisecond
+    end = std::chrono::system_clock::now();
+    std::chrono::duration<double> elapsed_seconds = end-start;
+    return elapsed_seconds.count()*1000;
 }
 
-int alpha_beta_minmax(player p,char* base,int d,int turn, double*score,double alpha,double beta);
+int alpha_beta_minmax(char* base,int d,int turn, double*score,double alpha,double beta);
+int t_alpha_beta_minmax(char* base,int d,int turn, double*score,double alpha,double beta);
 
 int ab_minmax(player p,char* base,int d,int turn, double* score){
+    timer_start();
     double alpha=-9999,beta=9999;
-    return alpha_beta_minmax(p,base,d,turn,score,alpha,beta);
+    t32=p;
+    int ret = alpha_beta_minmax(base,d,turn,score,alpha,beta);
+    //printf("%d,time=%d\n",ret,timer_end());
+    int d2=d;
+    while(d2<=32){
+        if(timer_end()>1800)break;
+        d2++;
+        int tmp=t_alpha_beta_minmax(base,d2,turn,score,alpha,beta);
+        if(timer_end()>1800)break;
+        ret=tmp;
+        //printf("<%d>",d2);
+    }
+    return ret;
 }
 
-int alpha_beta_minmax(player p,char* base,int d,int turn, double* score,double alpha,double beta){
+int t_alpha_beta_minmax(char* base,int d,int turn, double* score,double alpha,double beta){
+    if(timer_end()>1800)return 0;
     if(d==0||terminate(base)!=-1){ //minus score for opponent
-        player* tmp=&p;
-        if(turn!=p.turn){
-            tmp=(player*)malloc(sizeof(player));
-            memset(tmp,0,sizeof(player));
-            make_opponent(p,tmp);
-        }
-        *score=value(*tmp,base);
-        if(p.turn!=tmp->turn)release(tmp);
+        *score=(turn==2?-1:1)*value(t32,base);
         return 0;
     }
     if(turn==1){
@@ -268,7 +241,7 @@ int alpha_beta_minmax(player p,char* base,int d,int turn, double* score,double a
             char tmp[14];char now=turn;
             copy_board(base,tmp);
             perform(tmp,&now,op);
-            alpha_beta_minmax(p,tmp,d-(turn==now?0:1),now,&this_score,alpha,beta);
+            t_alpha_beta_minmax(tmp,d-(turn==now?0:1),now,&this_score,alpha,beta);
             if(now!=turn)this_score*=-1;
             if(this_score>max_score){
                 max_score=this_score;
@@ -290,7 +263,7 @@ int alpha_beta_minmax(player p,char* base,int d,int turn, double* score,double a
             char tmp[14];char now=turn;
             copy_board(base,tmp);
             perform(tmp,&now,op);
-            alpha_beta_minmax(p,tmp,d-(turn==now?0:1),now,&this_score,alpha,beta);
+            t_alpha_beta_minmax(tmp,d-(turn==now?0:1),now,&this_score,alpha,beta);
             if(now!=turn)this_score*=-1;
             if(this_score>opponent_max_score){
                 opponent_max_score=this_score;
@@ -304,7 +277,58 @@ int alpha_beta_minmax(player p,char* base,int d,int turn, double* score,double a
     }
 }
 
-int autogame(player p1,player p2,int ver){
+int alpha_beta_minmax(char* base,int d,int turn, double* score,double alpha,double beta){
+    if(d==0||terminate(base)!=-1){ //minus score for opponent
+        *score=(turn==2?-1:1)*value(t32,base);
+        return 0;
+    }
+    if(turn==1){
+        double max_score=-999;
+        int best_op=0;
+        for(int i=0;i<=5;i++){
+            char op=turn*10+i+1;
+            if(base[op2p[op]]==0)continue;
+            double this_score;
+            char tmp[14];char now=turn;
+            copy_board(base,tmp);
+            perform(tmp,&now,op);
+            alpha_beta_minmax(tmp,d-(turn==now?0:1),now,&this_score,alpha,beta);
+            if(now!=turn)this_score*=-1;
+            if(this_score>max_score){
+                max_score=this_score;
+                best_op=op;
+            }
+            if(max_score>alpha)alpha=max_score;
+            if(alpha>=beta)break;
+        }   
+        *score=max_score;
+        return best_op;
+    }
+    else{
+        double opponent_max_score=-999;
+        int best_op=0;
+        for(int i=0;i<=5;i++){
+            char op=turn*10+i+1;
+            if(base[op2p[op]]==0)continue;
+            double this_score;
+            char tmp[14];char now=turn;
+            copy_board(base,tmp);
+            perform(tmp,&now,op);
+            alpha_beta_minmax(tmp,d-(turn==now?0:1),now,&this_score,alpha,beta);
+            if(now!=turn)this_score*=-1;
+            if(this_score>opponent_max_score){
+                opponent_max_score=this_score;
+                best_op=op;
+            }
+            if(-1*opponent_max_score<beta)beta=-1*opponent_max_score;
+            if(alpha>=beta)break;
+        }
+        *score=opponent_max_score;
+        return best_op;
+    }
+}
+
+int autogame(player p1,player p2){
     char base[14];
     init(base);
     char turn=1;
@@ -314,15 +338,9 @@ int autogame(player p1,player p2,int ver){
         int op;
         //int op = minmax(turn==1?p1:p2,base,(turn==1?p1:p2).depth,turn,&tmp);
         if(turn==1){
-            if(ver==0)
-                op = minmax(p1,base,p1.depth,turn,&tmp);
-            else
                 op = ab_minmax(p1,base,p1.depth,turn,&tmp);
         }
         else{
-            if(ver==0)
-                op = minmax(p2,base,p2.depth,turn,&tmp);
-            else
                 op = ab_minmax(p2,base,p2.depth,turn,&tmp);
         }
         perform(base,&turn,op);
@@ -357,44 +375,48 @@ int human_game(player p1){
     return 2*terminate(base)-12*y;
 }
 
+extern "C" {
 //t3.2
 int mancala_operator(int* flag, int* status/*[14]*/){
-    player* p=new_player(9,1.0,12,6);//9,3
+    player* p=new_player(9,1.0,9,3);//12,6/9,3/12,0
     char base[14];
+    init(base);
     for(int i=0;i<14;i++){
         base[i]=status[i];
     }
     double tmp;
+    release(p);
     return ab_minmax(*p,base,p->depth,*flag,&tmp);
 }
-
-int main(){
-    int n=10;
-    player* p[n];
-    double t1[n]={},t2[n]={};
-    //no_step_print=1;
-    p[0]=new_player(9,1.0,12,0);
-    p[1]=new_player(9,1.0,9,9);
-    p[2]=new_player(9,1.0,6,6);
-    p[3]=new_player(9,1.0,3,3);
-    p[4]=new_player(9,1.0,0,0);
-    p[5]=new_player(7,1.0,12,3);
-    p[6]=new_player(7,1.0,12,0);
-    p[0]=new_player(9,1.0,12,6);
-    human_game(*p[0]);
-    return 0;
-    
-    //for(int i=0;i<n/2;i++)p[i]=new_player(4,2);
-    //for(int i=n/2;i<n;i++)p[i]=new_player(5,2);
-    for(int i=0;i<=6;i++){
-        for(int j=0;j<=6;j++){
-            printf("[%d vs %d]",i,j);
-            double tmp=autogame(*p[i],*p[j],1);
-            t1[i]+=tmp/n/n;
-            t2[j]-=tmp/n/n;
-        }
-        printf("\n");
-    }
-    printf("prog end\n");
-    return 0;
 }
+//
+//int main(){
+//    int n=10;
+//    player* p[n];
+//    double t1[n]={},t2[n]={};
+//    no_step_print=1;
+//    p[0]=new_player(11,1.0,12,0);
+//    p[1]=new_player(12,1.0,9,9);
+//    p[2]=new_player(11,1.0,6,6);
+//    p[3]=new_player(11,1.0,3,3);
+//    p[4]=new_player(9,1.0,0,0);
+//    p[5]=new_player(7,1.0,12,3);
+//    p[6]=new_player(7,1.0,12,0);
+//    p[7]=new_player(9,1.0,12,6);
+//    //human_game(*p[0]);
+//    //return 0;
+//
+//    //for(int i=0;i<n/2;i++)p[i]=new_player(4,2);
+//    //for(int i=n/2;i<n;i++)p[i]=new_player(5,2);
+//    for(int i=0;i<=6;i++){
+//        for(int j=0;j<=6;j++){
+//            printf("[%d vs %d]",i,j);
+//            double tmp=autogame(*p[i],*p[j],1);
+//            t1[i]+=tmp/n/n;
+//            t2[j]-=tmp/n/n;
+//        }
+//        printf("\n");
+//    }
+//    printf("prog end\n");
+//    return 0;
+//}
